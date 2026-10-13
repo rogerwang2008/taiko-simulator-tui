@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 import threading
 from dataclasses import dataclass
 from importlib.resources import files
@@ -50,16 +51,22 @@ class OutputDevice:
 
 
 def pick_output_device() -> OutputDevice:
-    """Prefer the WASAPI default output: PortAudio's own default is usually MME, which adds ~100 ms."""
+    """Prefer WASAPI on Windows; elsewhere (Core Audio, ALSA, …) take the host API default.
+
+    PortAudio's own default on Windows is MME, which buffers around 100 ms.
+    """
     host_apis = sd.query_hostapis()
-    for api in host_apis:
-        if "WASAPI" in api["name"] and api["default_output_device"] >= 0:
-            index = api["default_output_device"]
-            break
-    else:
-        index = sd.default.device[1]
-        if index < 0:
-            raise RuntimeError("no audio output device available")
+    index = -1
+    if sys.platform == "win32":
+        index = next(
+            (api["default_output_device"] for api in host_apis if "WASAPI" in api["name"]),
+            -1,
+        )
+    if index < 0:
+        index = host_apis[sd.default.hostapi]["default_output_device"]
+    if index < 0:
+        raise RuntimeError("no audio output device available")
+
     info = sd.query_devices(index)
     return OutputDevice(
         index=index,

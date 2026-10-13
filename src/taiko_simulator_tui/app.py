@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from functools import partial
 
 from rich.text import Text
@@ -20,6 +21,7 @@ from .keyboard import (
     CHANNEL_NAMES,
     KEY_POSITIONS,
     LAYOUT,
+    PressTracker,
     ZONES,
     ZONE_CHANNELS,
     ZONE_SOUNDS,
@@ -30,9 +32,10 @@ from .keyboard import (
     zone_of,
 )
 
-# Taiko convention: the face (don) is red, the rim (ka) is blue. Hex so the same
-# value works both as a Rich style and in Textual CSS.
-ZONE_COLORS = ("#2f8fff", "#ff5a4d", "#ff5a4d", "#2f8fff")
+# Warm for the face (don), cool for the rim (ka), and a distinct hue for each of the
+# four zones so both dividing lines stay visible. Hex so the same value works both as
+# a Rich style and in Textual CSS.
+ZONE_COLORS = ("#3b9dff", "#ff5a4d", "#ffc233", "#22c3c9")
 SOUND_LABELS = {"rim": "鼓边 (ka)", "center": "鼓面 (don)"}
 HIT_FLASH_SECONDS = 0.1
 
@@ -124,11 +127,17 @@ class ZonePanel(Static):
         padding: 0 1;
         border: tall $panel;
     }}
-    ZonePanel.rim {{
+    ZonePanel.zone0 {{
         border: tall {ZONE_COLORS[0]};
     }}
-    ZonePanel.center {{
+    ZonePanel.zone1 {{
         border: tall {ZONE_COLORS[1]};
+    }}
+    ZonePanel.zone2 {{
+        border: tall {ZONE_COLORS[2]};
+    }}
+    ZonePanel.zone3 {{
+        border: tall {ZONE_COLORS[3]};
     }}
     ZonePanel.hit {{
         background: $boost;
@@ -137,7 +146,7 @@ class ZonePanel(Static):
     """
 
     def __init__(self, zone: int, *, classes: str = "", **kwargs) -> None:
-        super().__init__(classes=f"{classes} {'rim' if ZONE_SOUNDS[zone] == 'rim' else 'center'}".strip(), **kwargs)
+        super().__init__(classes=f"{classes} zone{zone}".strip(), **kwargs)
         self._zone = zone
         self._flash_timer = None
         self.border_title = ZONES[zone]
@@ -162,7 +171,7 @@ class TaikoApp(App[None]):
     """大鼓模拟器：键盘左右四分区，实时发声并可视化配置。"""
 
     TITLE = "太鼓模拟器"
-    SUB_TITLE = "键盘四分区 · WASAPI 低延迟"
+    SUB_TITLE = "键盘四分区 · 低延迟"
 
     CSS = """
     Screen {
@@ -196,6 +205,7 @@ class TaikoApp(App[None]):
         super().__init__()
         self._config = config_store.load()
         self._selected = 0
+        self._pressed = PressTracker()
         self._engine: AudioEngine | None = None
         self._audio_error = ""
 
@@ -223,11 +233,15 @@ class TaikoApp(App[None]):
             self._engine = None
 
     def on_key(self, event: events.Key) -> None:
-        position = KEY_POSITIONS.get((event.character or "").lower())
+        key = (event.character or "").lower()
+        position = KEY_POSITIONS.get(key)
         if position is None:
             return
         event.stop()
         event.prevent_default()
+
+        if not self._pressed.should_trigger(key, time.monotonic()):
+            return  # the key is still held down
 
         zone = zone_of(position, self._config.boundaries)
         if self._engine is not None:

@@ -75,3 +75,36 @@ def zone_keys(boundaries: tuple[float, float, float], zone: int) -> list[str]:
     """Keycaps in `zone`, in reading order."""
     zones = key_zones(boundaries)
     return [cap.char for row in LAYOUT for cap in row if zones[cap.char] == zone]
+
+
+# Holding a key makes the OS resend key-down events, and no key-up ever arrives:
+# a terminal reports release only under the kitty keyboard protocol's event-type
+# flag, which Textual does not request and most terminals do not implement. So a
+# hold is recognised from the timing of the events rather than from a key-up.
+MIN_HUMAN_GAP = 0.06  # two presses of one key closer than this cannot be human
+CADENCE_TOLERANCE = 0.4  # a gap within ±40% of the repeat interval continues the same hold
+
+
+class PressTracker:
+    """Collapses a key's event stream into one trigger per physical press."""
+
+    def __init__(self) -> None:
+        self._last: dict[str, float] = {}
+        self._cadence: dict[str, float] = {}
+
+    def should_trigger(self, key: str, now: float) -> bool:
+        last = self._last.get(key)
+        self._last[key] = now
+        if last is None:
+            return True
+
+        gap = now - last
+        cadence = self._cadence.get(key)
+        if cadence is not None and abs(gap - cadence) <= cadence * CADENCE_TOLERANCE:
+            return False  # the hold is still ticking at its established interval
+        if gap < MIN_HUMAN_GAP:
+            self._cadence[key] = gap  # no human repeats a key this fast: a hold was found
+            return False
+
+        self._cadence.pop(key, None)
+        return True
