@@ -1,0 +1,12 @@
+# Normalise line endings in the repository (LF) and let each platform check out as it likes.
+* text=auto
+
+*.py text eol=lf
+*.toml text eol=lf
+*.json text eol=lf
+*.md text
+*.lock text eol=lf
+
+# Audio samples must never be line-ending converted.
+*.mp3 binary
+*.wav binary
