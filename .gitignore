@@ -8,3 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Written by the app into the working directory
+config.json

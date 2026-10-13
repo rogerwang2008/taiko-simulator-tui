@@ -1,4 +1,4 @@
-"""The zone boundaries, persisted as JSON in the user config directory."""
+"""The zone boundaries, persisted as JSON in the current working directory."""
 
 from __future__ import annotations
 
@@ -6,11 +6,9 @@ import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-import platformdirs
-
 from .keyboard import clamp_boundaries, default_boundaries
 
-APP_NAME = "taiko-simulator-tui"
+CONFIG_NAME = "config.json"
 VERSION = 1
 
 
@@ -21,7 +19,7 @@ class Config:
 
 
 def config_path() -> Path:
-    return Path(platformdirs.user_config_dir(APP_NAME, appauthor=False)) / "config.json"
+    return Path.cwd() / CONFIG_NAME
 
 
 def load() -> Config:
@@ -42,6 +40,4 @@ def load() -> Config:
 
 
 def save(config: Config) -> None:
-    path = config_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(asdict(config), indent=2) + "\n", encoding="utf-8")
+    config_path().write_text(json.dumps(asdict(config), indent=2) + "\n", encoding="utf-8")

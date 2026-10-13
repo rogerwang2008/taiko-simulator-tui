@@ -260,7 +260,6 @@ source = { editable = "." }
 dependencies = [
     { name = "miniaudio" },
     { name = "numpy" },
-    { name = "platformdirs" },
     { name = "sounddevice" },
     { name = "soxr" },
     { name = "textual" },
@@ -270,7 +269,6 @@ dependencies = [
 requires-dist = [
     { name = "miniaudio", specifier = ">=1.71" },
     { name = "numpy", specifier = ">=2.5.4" },
-    { name = "platformdirs", specifier = ">=4.13.0" },
     { name = "sounddevice", specifier = ">=0.5.6" },
     { name = "soxr", specifier = ">=1.1.0" },
     { name = "textual", specifier = ">=8.2.8" },

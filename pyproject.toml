@@ -1,7 +1,7 @@
 [project]
 name = "taiko-simulator-tui"
 version = "0.1.0"
-description = "Keyboard-split taiko drum simulator TUI with low-latency WASAPI audio"
+description = "Keyboard-split taiko drum simulator TUI with low-latency audio"
 readme = "README.md"
 authors = [
     { name = "rogerwang2008", email = "rogerwang2008@163.com" }
@@ -10,7 +10,6 @@ requires-python = ">=3.14"
 dependencies = [
     "miniaudio>=1.71",
     "numpy>=2.5.4",
-    "platformdirs>=4.13.0",
     "sounddevice>=0.5.6",
     "soxr>=1.1.0",
     "textual>=8.2.8",
